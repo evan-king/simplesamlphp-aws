@@ -1,0 +1,68 @@
+AWS module
+==========
+
+The AWS module provides integration with AWS IAM by deriving the necessary
+AWS-defined attributes from existing ones.
+
+`aws:SetAWSAttributes`
+----------------------
+
+This module adds the AWS-defined attributes specifying a login name and one
+or more IAM roles.  It accepts the following configuration options:
+
+
+    20 => array(
+        'class' => 'aws:SetAWSAttributes',
+        
+        /* Name of existing attribute to copy as AWS RoleSessionName */
+        'attribute.uid' => 'uid',
+        
+        /* Name of existing attribute(s) that contain the names of roles */
+        'attribute.role' => 'groups',
+        
+        /* Id number of the AWS account being linked - must be specified */
+        'aws.account' => '939655020730',
+        
+        /* Name of the matching SAML provider defined in IAM - must be specified */
+        'iam.provider' => 'IAMProvider',
+        
+        /*
+         * Map of AWS role name => array of local matching values.
+         * The IAM role will be granted if some value in a `attribute.role`
+         * attribute matches one of the values listed here.  Roles
+         * are evaluated in order (important if `match.all` is left false).
+         */
+        'iam.roles' => array(
+            'IAMUser' => array('users'),
+            'IAMAdmin' => array('sudo', 'wheel'),
+        ),
+        
+        /*
+         * Whether to match every IAM role that can.
+         * By default, matching will stop on the first
+         * granted role.  Set true to enable choosing
+         * from a list of all granted roles during login.
+         */
+        'match.all' => false,
+    ),
+
+All values needed to ascertain role memberships are expected to be already set
+when this filter runs.  If for example loading user data from ldap, IAM roles
+could be mapped based on `objectClass`, group memberships exposed via `memberOf`,
+or additional attributes populated by a separate ldap filter performing an extra
+ldap search.
+
+After this filter runs, two new SAML assertions will be added to the request:
+
+ - `https://aws.amazon.com/SAML/Attributes/RoleSessionName`
+
+    Contains a single value, the name by which the login session will be identified
+ 
+ - `https://aws.amazon.com/SAML/Attributes/Role`
+
+    Contains one or more values identifying a pairing of IAM role with IAM provider,
+    in the format 
+    
+        `arn:aws:iam::<aws-account-id>:role/<iam-role-name>,arn:aws:iam::<aws-account-id>:saml-provider/<iam-provider-name>`.
+    
+    If multiple values are provided, users will be offered a choice of role during login.
