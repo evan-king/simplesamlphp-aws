@@ -107,7 +107,7 @@ class sspmod_aws_Auth_Process_SetAWSAttributes extends SimpleSAML_Auth_Processin
         $loginId = $attributes[$this->uidAttribute][0];
         if(!$loginId) {
             throw new SimpleSAML_Error_Exception(
-                "No session name available (should have been in {$this->uidAttribute}"
+                "No session name available (should have been in {$this->uidAttribute})"
             );
         }
         $attributes[self::NAME_ATTRIBUTE] = array($loginId);
