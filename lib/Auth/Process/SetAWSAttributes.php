@@ -10,6 +10,11 @@
  *     
  *     https://aws.amazon.com/SAML/Attributes/RoleSessionName
  *     Used by IAM to uniquely identify the federated user
+ * 
+ * It will also handle these AWS-specific optional attributes:
+ * 
+ *     https://aws.amazon.com/SAML/Attributes/SessionDuration
+ *     Used by IAM to set the duration of the login session
  *
  * @author Evan King
  */
@@ -17,6 +22,7 @@ class sspmod_aws_Auth_Process_SetAWSAttributes extends SimpleSAML_Auth_Processin
     
     const ROLE_ATTRIBUTE = 'https://aws.amazon.com/SAML/Attributes/Role';
     const NAME_ATTRIBUTE = 'https://aws.amazon.com/SAML/Attributes/RoleSessionName';
+    const DURATION_ATTRIBUTE = 'https://aws.amazon.com/SAML/Attributes/SessionDuration';
 
     /**
      * Name of existing attribute to expose in SAML as AWS RoleSessionName
@@ -44,6 +50,11 @@ class sspmod_aws_Auth_Process_SetAWSAttributes extends SimpleSAML_Auth_Processin
     private $iamRoles = array();
 
     /**
+     * Lifetime of the login session
+     */
+    private $sessionDurationSeconds = 3600; // 1 hour
+
+    /**
      * Whether to set all matching roles (else set only the first match found)
      */
     private $matchAll = false;
@@ -66,6 +77,7 @@ class sspmod_aws_Auth_Process_SetAWSAttributes extends SimpleSAML_Auth_Processin
                 
                 case 'attribute.uid': $this->uidAttribute = (string)$value; break;
                 case 'attribute.role': $this->roleAttributes = $this->toArray($value); break;
+                case 'session.duration': $this->sessionDurationSeconds = (int)$value; break;
                 case 'aws.account': $this->awsAccountId = (string)$value; break;
                 case 'iam.provider': $this->iamProviderName = (string)$value; break;
                 case 'match.all': $this->matchAll = (bool)$value; break;
@@ -111,6 +123,9 @@ class sspmod_aws_Auth_Process_SetAWSAttributes extends SimpleSAML_Auth_Processin
             );
         }
         $attributes[self::NAME_ATTRIBUTE] = array($loginId);
+        
+        // set SessionDuration
+        $attributes[self::DURATION_ATTRIBUTE] = array($this->sessionDurationSeconds);
         
         // get all local roles
         $allLocalRoles = array();
